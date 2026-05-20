@@ -19,6 +19,12 @@ const pool = mysql.createPool({
   }
 });
 
+console.log({
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  db: process.env.DB_NAME
+});
 console.log("MySQL conectado");
 
 export const query = async (sql, params = []) => {
