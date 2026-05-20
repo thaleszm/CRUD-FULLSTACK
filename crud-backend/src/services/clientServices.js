@@ -2,8 +2,8 @@ import { query } from "../db.js";
 
 // Buscar todos
 export const getClients = async () => {
-  const { rows } = await query("SELECT * FROM clientes");
-  return rows;
+  const result = await query("SELECT * FROM clientes");
+  return result.rows;
 };
 
 // Criar cliente
@@ -12,28 +12,24 @@ export const createClient = async (clientData) => {
 
   const result = await query(
     `INSERT INTO clientes (name, email, job, rate, isactive)
-     VALUES (?, ?, ?, ?, ?)`,
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
     [name, email, job, rate, isactive]
   );
 
-  const { rows } = await query(
-    "SELECT * FROM clientes WHERE id = ?",
-    [result.rows.insertId]
-  );
-
-  return rows[0];
+  return result.rows[0];
 };
 
-// Atualizar cliente (mantém dados antigos se não enviar)
+// Atualizar cliente
 export const updateClient = async (clientId, clientData) => {
-  const { rows } = await query(
-    "SELECT * FROM clientes WHERE id = ?",
+  const existing = await query(
+    "SELECT * FROM clientes WHERE id = $1",
     [clientId]
   );
 
-  if (rows.length === 0) return null;
+  if (existing.rows.length === 0) return null;
 
-  const old = rows[0];
+  const old = existing.rows[0];
 
   const name = clientData.name ?? old.name;
   const email = clientData.email ?? old.email;
@@ -43,13 +39,17 @@ export const updateClient = async (clientId, clientData) => {
 
   await query(
     `UPDATE clientes
-     SET name=?, email=?, job=?, rate=?, isactive=?
-     WHERE id=?`,
+     SET name = $1,
+         email = $2,
+         job = $3,
+         rate = $4,
+         isactive = $5
+     WHERE id = $6`,
     [name, email, job, rate, isactive, clientId]
   );
 
   const updated = await query(
-    "SELECT * FROM clientes WHERE id = ?",
+    "SELECT * FROM clientes WHERE id = $1",
     [clientId]
   );
 
@@ -58,15 +58,15 @@ export const updateClient = async (clientId, clientData) => {
 
 // Deletar cliente
 export const deleteClient = async (clientId) => {
-  const { rows } = await query(
-    "SELECT * FROM clientes WHERE id = ?",
+  const existing = await query(
+    "SELECT * FROM clientes WHERE id = $1",
     [clientId]
   );
 
-  if (rows.length === 0) return false;
+  if (existing.rows.length === 0) return false;
 
   const result = await query(
-    "DELETE FROM clientes WHERE id = ?",
+    "DELETE FROM clientes WHERE id = $1",
     [clientId]
   );
 
@@ -77,13 +77,13 @@ export const deleteClient = async (clientId) => {
 export const searchClients = async (searchTerm) => {
   const term = `%${searchTerm}%`;
 
-  const { rows } = await query(
+  const result = await query(
     `SELECT * FROM clientes
-     WHERE name LIKE ?
-     OR email LIKE ?
-     OR job LIKE ?`,
-    [term, term, term]
+     WHERE name ILIKE $1
+     OR email ILIKE $1
+     OR job ILIKE $1`,
+    [term]
   );
 
-  return rows;
+  return result.rows;
 };
