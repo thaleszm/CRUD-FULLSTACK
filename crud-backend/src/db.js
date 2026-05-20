@@ -5,11 +5,18 @@ dotenv.config();
 
 const { Pool } = pg;
 
-export const pool = new Pool({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
 });
 
-console.log("🔥 PostgreSQL conectado");
+export const query = async (sql, params = []) => {
+  const result = await pool.query(sql, params);
+
+  return {
+    rows: result.rows,
+    rowCount: result.rowCount,
+  };
+};
