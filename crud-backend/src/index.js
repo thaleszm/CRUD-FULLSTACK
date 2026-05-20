@@ -5,7 +5,9 @@ import clientRoutes from "./routes/clientRoutes.js"
 const app = express();
 const port = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL
+}));
 app.use(express.json());
 
 app.use('/api', clientRoutes);
